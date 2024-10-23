@@ -9,11 +9,41 @@ def load_data():
     # unzip and read the tree data
     # edmonton_trees = pd.read_csv('data/edmonton_trees.csv.zip')
     # return edmonton_neighbourhoods, edmonton_vaccant_land, edmonton_pests, edmonton_trees
+    return edmonton_neighbourhoods, edmonton_vaccant_land, edmonton_pests
+
+def clean_and_merge_data():
+    # create dataframes
+    neighbourhoods_df, vaccant_land_df, pests_df = load_data()
+    
+    # make sure the neighbourhoods col is consistent
+    neighbourhoods_df.rename(columns={'Neighbourhood Name':'neighbourhood'}, inplace=True)
+    vaccant_land_df.rename(columns={'NEIGHBOURHOOD_NAME':'neighbourhood'}, inplace=True)
+    pests_df.rename(columns={'Neighbourhood':'neighbourhood'}, inplace=True)
+
+    # convert the neighbourhoods to lowercase
+    neighbourhoods_df['neighbourhood'] = neighbourhoods_df['neighbourhood'].str.lower().str.strip()
+    vaccant_land_df['neighbourhood'] = vaccant_land_df['neighbourhood'].str.lower().str.strip()
+    pests_df['neighbourhood'] = pests_df['neighbourhood'].str.lower().str.strip()
+
+    # merge the dataframes
+    merged_df = pd.merge(neighbourhoods_df, vaccant_land_df, on='neighbourhood', how='outer')
+    merged_df = pd.merge(merged_df, pests_df, on='neighbourhood',how='outer')
+
+    # handle missing values
+    merged_df.fillna(0, inplace=True)
+
+    # keep only the columns we need
+
+    return merged_df
+
 
 
 def main():
     load_data()
     print("Data loaded successfully")
+    final_df = clean_and_merge_data()
+    print("Data cleaned and merged successfully")
+    print(final_df.head())
 
 if __name__ == '__main__':
     main()
