@@ -32,10 +32,14 @@ def clean_and_merge_data():
     # handle missing values
     merged_df.fillna(0, inplace=True)
 
-    # keep only the columns we need
+    # keep only the columns we need (neighbourhood, Geometry Multipolygon, OWNERSHIP_TYPE, ZONING, TYPOLOGY, Pest)
+    keep_cols = ['neighbourhood', 'Geometry Multipolygon', 'OWNERSHIP_TYPE', 'ZONING', 'TYPOLOGY', 'Pest']
+    merged_df = merged_df[keep_cols]
+
+    # drop duplicate rows
+    merged_df.drop_duplicates(inplace=True)
 
     return merged_df
-
 
 
 def main():
@@ -43,7 +47,10 @@ def main():
     print("Data loaded successfully")
     final_df = clean_and_merge_data()
     print("Data cleaned and merged successfully")
-    print(final_df.head())
+    print(final_df)
+
+    with open('location_final_data.txt', 'w') as f:
+        f.write(final_df.to_string())
 
 if __name__ == '__main__':
     main()
