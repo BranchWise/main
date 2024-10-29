@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, recall_score
 from datetime import datetime
 
 # Step 1: Load Data
@@ -55,14 +55,11 @@ y_pred = rf.predict(X_test)
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
 
-# Step 7: Feature Importance
-feature_importances = rf.feature_importances_
-feature_names = features.columns
-importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importances})
-importance_df = importance_df.sort_values(by='Importance', ascending=False)
-print("Feature Importances:\n", importance_df)
+# Extracting recall score
+recall = recall_score(y_test, y_pred, average='macro')
+print("Recall (macro):", recall)
 
-# Step 8: Prediction Function
+# Step 7: Prediction Function
 def recommend_top_species(input_features, model, top_n=5):
     """
     Given input features (location data), return the top N recommended species.
