@@ -6,16 +6,15 @@ from sklearn.metrics import accuracy_score, classification_report
 from datetime import datetime
 
 # Step 1: Load Data
-file_path = 'data/edmonton_neighborhoods.csv'  # Update this path to your local CSV file
+file_path = '/Users/sophiecabungcal/Downloads/Trees_20241025.csv'  # Update this path to your local CSV file
 data = pd.read_csv(file_path)
 
 # Step 2: Data Preprocessing
-
 # 2a. Handle missing values
-data['CONDITION_PERCENT'].fillna(data['CONDITION_PERCENT'].mean(), inplace=True)
-data['DIAMETER_BREAST_HEIGHT'].fillna(data['DIAMETER_BREAST_HEIGHT'].mean(), inplace=True)
+data['CONDITION_PERCENT'] = data['CONDITION_PERCENT'].fillna(data['CONDITION_PERCENT'].mean())
+data['DIAMETER_BREAST_HEIGHT'] = data['DIAMETER_BREAST_HEIGHT'].fillna(data['DIAMETER_BREAST_HEIGHT'].mean())
 data['PLANTED_DATE'] = pd.to_datetime(data['PLANTED_DATE'], errors='coerce')
-data['PLANTED_DATE'].fillna(datetime.now(), inplace=True)
+data['PLANTED_DATE'] = data['PLANTED_DATE'].fillna(datetime.now())
 
 # 2b. Convert 'PLANTED_DATE' to tree age
 data['tree_age'] = (datetime.now() - data['PLANTED_DATE']).dt.days // 365  # Convert to years
@@ -35,6 +34,10 @@ data['condition_category'] = data['CONDITION_PERCENT'].apply(categorize_conditio
 
 # 2d. Filter for 'Great' and 'Good' trees
 suitable_trees = data[data['condition_category'].isin(['Great', 'Good'])]
+
+# Filter out classes with fewer than 2 members
+class_counts = suitable_trees['SPECIES_COMMON'].value_counts()
+suitable_trees = suitable_trees[suitable_trees['SPECIES_COMMON'].isin(class_counts[class_counts >= 2].index)]
 
 # Step 3: Feature Selection
 features = suitable_trees[['NEIGHBOURHOOD_NAME', 'LOCATION_TYPE', 'DIAMETER_BREAST_HEIGHT', 'tree_age', 'LATITUDE', 'LONGITUDE']]
