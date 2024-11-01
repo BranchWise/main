@@ -123,7 +123,9 @@ def recommend_top_species(neighbourhood_name=None, location_type=None, lat=None,
             return formatted_species
     return []
 
-# Example usage:
+
+
+# Example:
 # Predicting top 5 species for a given neighbourhood name
 top_species_neighbourhood = recommend_top_species(neighbourhood_name="matt berry", model=rf, data=data, top_n=5)
 print("Top 5 recommended species for Matt Berry:", top_species_neighbourhood)
