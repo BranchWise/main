@@ -120,20 +120,39 @@ def recommend_top_species(neighbourhood_name=None, location_type=None, lat=None,
             probabilities = model.predict_proba(input_features)
             species_prob = sorted(zip(model.classes_, probabilities[0]), key=lambda x: x[1], reverse=True)
             formatted_species = [format_species_name(species) for species, prob in species_prob[:top_n]]
-            return formatted_species
-    return []
+            return formatted_species, neighbourhood_name, location_type
+    return [], neighbourhood_name, location_type
 
+def format_recommendation_output(species_list, neighbourhood_name=None, location_type=None, lat=None, lon=None, top_n=5):
+    """
+    Formats the output of the recommended species.
+    """
+    if neighbourhood_name:
+        neighbourhood_name = neighbourhood_name.title()
+    else:
+        neighbourhood_name = f"the location at lat: {lat} lon: {lon}"
+    
+    if location_type:
+        location_type = location_type.title()
+        location_info = f"{neighbourhood_name} - {location_type}"
+    else:
+        location_info = neighbourhood_name
+    
+    output = f"The top {top_n} recommended trees for {location_info}:\n"
+    for i, species in enumerate(species_list, 1):
+        output += f"{i}. {species}\n"
+    
+    return output
 
-
-# Example:
+# Ex:
 # Predicting top 5 species for a given neighbourhood name
-top_species_neighbourhood = recommend_top_species(neighbourhood_name="matt berry", model=rf, data=data, top_n=5)
-print("Top 5 recommended species for Matt Berry:", top_species_neighbourhood)
+species_list, neighbourhood_name, location_type = recommend_top_species(neighbourhood_name="matt berry", model=rf, data=data, top_n=5)
+print(format_recommendation_output(species_list, neighbourhood_name=neighbourhood_name, location_type=location_type, top_n=5))
 
 # Predicting top 5 species for given coordinates
-top_species_coordinates = recommend_top_species(lat=53.5461, lon=-113.4938, model=rf, data=data, top_n=5)
-print("Top 5 recommended species for coordinates (53.5461, -113.4938):", top_species_coordinates)
+species_list, neighbourhood_name, location_type = recommend_top_species(lat=53.5461, lon=-113.4938, model=rf, data=data, top_n=5)
+print(format_recommendation_output(species_list, lat=53.5461, lon=-113.4938, top_n=5))
 
 # Predicting top 5 species for a given neighbourhood name and location type
-top_species_neighbourhood_location = recommend_top_species(neighbourhood_name="charlesworth", location_type="park", model=rf, data=data, top_n=5)
-print("Top 5 recommended species for Charlesworth Park:", top_species_neighbourhood_location)
+species_list, neighbourhood_name, location_type = recommend_top_species(neighbourhood_name="charlesworth", location_type="park", model=rf, data=data, top_n=5)
+print(format_recommendation_output(species_list, neighbourhood_name=neighbourhood_name, location_type=location_type, top_n=5))
