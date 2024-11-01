@@ -1,25 +1,33 @@
 import pandas as pd
-import numpy as np
+import geopandas as gpd
+from shapely.geometry import Point, MultiPolygon
+from shapely.ops import unary_union
+from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
-from datetime import datetime
 
-# Step 1: Load Data
-file_path = '/Users/sophiecabungcal/Downloads/Trees_20241025.csv'  # Update this path to your local CSV file
-data = pd.read_csv(file_path)
+# Load data
+data = pd.read_csv('/Users/sophiecabungcal/Downloads/Trees_20241025.csv')
 
-# Step 2: Data Preprocessing
-# 2a. Handle missing values
+# Preprocess data
 data['CONDITION_PERCENT'] = data['CONDITION_PERCENT'].fillna(data['CONDITION_PERCENT'].mean())
 data['DIAMETER_BREAST_HEIGHT'] = data['DIAMETER_BREAST_HEIGHT'].fillna(data['DIAMETER_BREAST_HEIGHT'].mean())
 data['PLANTED_DATE'] = pd.to_datetime(data['PLANTED_DATE'], errors='coerce')
 data['PLANTED_DATE'] = data['PLANTED_DATE'].fillna(datetime.now())
+data['tree_age'] = (datetime.now() - data['PLANTED_DATE']).dt.days // 365
 
-# 2b. Convert 'PLANTED_DATE' to tree age
-data['tree_age'] = (datetime.now() - data['PLANTED_DATE']).dt.days // 365  # Convert to years
+# Convert LOCATION to geospatial data
+data['geometry'] = data.apply(lambda row: Point(row['LONGITUDE'], row['LATITUDE']), axis=1)
+gdf = gpd.GeoDataFrame(data, geometry='geometry')
 
-# 2c. Create tree condition labels
+# Ensure neighborhood names are lowercase
+gdf['NEIGHBOURHOOD_NAME'] = gdf['NEIGHBOURHOOD_NAME'].str.lower()
+
+# Aggregate points by neighborhood to create multipolygons
+neighborhoods = gdf.dissolve(by='NEIGHBOURHOOD_NAME', as_index=False)
+neighborhoods['geometry'] = neighborhoods['geometry'].apply(lambda x: unary_union(x) if isinstance(x, MultiPolygon) else x)
+
+# Categorize tree conditions
 def categorize_condition(condition):
     if condition >= 70:
         return "Great"
@@ -30,51 +38,51 @@ def categorize_condition(condition):
     else:
         return "Bad"
 
-data['condition_category'] = data['CONDITION_PERCENT'].apply(categorize_condition)
+gdf['condition_category'] = gdf['CONDITION_PERCENT'].apply(categorize_condition)
 
-# 2d. Filter for 'Great' and 'Good' trees
-suitable_trees = data[data['condition_category'].isin(['Great', 'Good'])]
+# Filter for 'Great' and 'Good' trees
+suitable_trees = gdf[gdf['condition_category'].isin(['Great', 'Good'])]
 
 # Filter out classes with fewer than 2 members
 class_counts = suitable_trees['SPECIES_COMMON'].value_counts()
 suitable_trees = suitable_trees[suitable_trees['SPECIES_COMMON'].isin(class_counts[class_counts >= 2].index)]
 
-# Step 3: Feature Selection
+# Feature selection
 features = suitable_trees[['NEIGHBOURHOOD_NAME', 'LOCATION_TYPE', 'DIAMETER_BREAST_HEIGHT', 'tree_age', 'LATITUDE', 'LONGITUDE']]
 target = suitable_trees['SPECIES_COMMON']
 
-# 3a. One-hot encode categorical features
+# One-hot encode categorical features
 features = pd.get_dummies(features, columns=['NEIGHBOURHOOD_NAME', 'LOCATION_TYPE'], drop_first=True)
 
-# Step 4: Train-Test Split with Stratification
+# Save the feature names used during training
+feature_names = features.columns
+
+# Train-test split
 X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42, stratify=target)
 
-# Step 5: Model Training
-rf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
-rf.fit(X_train, y_train)
+# Train Random Forest model
+rf_model = RandomForestClassifier(random_state=42)
+rf_model.fit(X_train, y_train)
 
-# Step 6: Model Evaluation
-y_pred = rf.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred))
+# Function to predict best tree species for a given coordinate or neighborhood
+def predict_best_tree(neighbourhood_name=None, latitude=None, longitude=None):
+    if neighbourhood_name:
+        neighbourhood_name = neighbourhood_name.lower()
+        input_data = pd.DataFrame({'NEIGHBOURHOOD_NAME': [neighbourhood_name], 'LOCATION_TYPE': ['Unknown'], 'DIAMETER_BREAST_HEIGHT': [0], 'tree_age': [0], 'LATITUDE': [0], 'LONGITUDE': [0]})
+    elif latitude and longitude:
+        input_data = pd.DataFrame({'NEIGHBOURHOOD_NAME': ['Unknown'], 'LOCATION_TYPE': ['Unknown'], 'DIAMETER_BREAST_HEIGHT': [0], 'tree_age': [0], 'LATITUDE': [latitude], 'LONGITUDE': [longitude]})
+    else:
+        return "Please provide either a neighbourhood name or coordinates."
 
-# Step 7: Feature Importance
-feature_importances = rf.feature_importances_
-feature_names = features.columns
-importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importances})
-importance_df = importance_df.sort_values(by='Importance', ascending=False)
-print("Feature Importances:\n", importance_df)
+    input_data = pd.get_dummies(input_data, columns=['NEIGHBOURHOOD_NAME', 'LOCATION_TYPE'], drop_first=True)
+    
+    # Align input data columns with training data columns
+    input_data = input_data.reindex(columns=feature_names, fill_value=0)
+    
+    prediction = rf_model.predict(input_data)
+    return prediction[0]
 
-# Step 8: Prediction Function
-def recommend_top_species(input_features, model, top_n=5):
-    """
-    Given input features (location data), return the top N recommended species.
-    """
-    probabilities = model.predict_proba(input_features)
-    species_prob = sorted(zip(model.classes_, probabilities[0]), key=lambda x: x[1], reverse=True)
-    return [species for species, prob in species_prob[:top_n]]
-
-# Example: Predicting top 5 species for a sample input
-sample_input = X_test.iloc[[0]]
-top_species = recommend_top_species(sample_input, rf, top_n=5)
-print("Top 5 recommended species:", top_species)
+# Example usage
+print("morin industrial:", predict_best_tree(neighbourhood_name='morin industrial'))
+print("charlesworth:", predict_best_tree(neighbourhood_name='charlesworth'))
+print("colverdale:", predict_best_tree(neighbourhood_name='colverdale'))
