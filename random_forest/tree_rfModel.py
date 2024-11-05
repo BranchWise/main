@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from datetime import datetime
 from shapely.geometry import Point, Polygon
-from shapely.ops import unary_union
+import joblib
 
 file_path = '/Users/sophiecabungcal/Downloads/Trees_20241025.csv'
 data = pd.read_csv(file_path)
@@ -65,6 +65,9 @@ feature_names = features.columns
 importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importances})
 importance_df = importance_df.sort_values(by='Importance', ascending=False)
 print("Feature Importances:\n", importance_df)
+
+# Save the trained model
+joblib.dump(rf, 'random_forest_model.pkl')
 
 def map_coordinates_to_neighbourhood(lat, lon, data):
     """
