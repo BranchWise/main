@@ -1,0 +1,142 @@
+Accuracy: 0.497312062664488
+ precision    recall  f1-score   support
+
+          American Elm       0.63      0.74      0.68     17117
+   American Hybrid Elm       0.00      0.00      0.00         1
+       American Linden       0.33      0.39      0.36       449
+ American Mountain Ash       0.18      0.21      0.19       243
+           Amur Cherry       0.13      0.16      0.15       373
+         Amur Corktree       0.00      0.00      0.00         7
+          Amur Maackia       0.07      0.12      0.09        25
+            Amur Maple       0.28      0.41      0.34      1051
+                 Apple       0.24      0.29      0.26        42
+       Arnold Hawthorn       0.44      0.64      0.52        11
+                   Ash       0.21      0.20      0.21        15
+         Austrian Pine       0.21      0.30      0.25        77
+            Balsam Fir       0.08      0.10      0.09        29
+         Balsam Poplar       0.23      0.30      0.26       823
+                 Birch       0.00      0.00      0.00        13
+           Black Alder       0.00      0.00      0.00         1
+             Black Ash       0.06      0.02      0.04       121
+          Black Spruce       0.37      0.78      0.50         9
+      Bristlecone Pine       0.00      0.00      0.00         3
+               Bur Oak       0.40      0.47      0.43      2788
+             Butternut       0.00      0.00      0.00         2
+           Canada Plum       0.10      0.26      0.14        39
+        Cerro Hawthorn       0.00      0.00      0.00         0
+           Cherry Plum       0.00      0.00      0.00         6
+            Cherry sp.       0.10      0.17      0.12         6
+           Chokecherry       0.30      0.27      0.28      1245
+       Colorado Spruce       0.42      0.56      0.48      7804
+    Columnar Crabapple       0.20      0.75      0.32         4
+     Cottonwood Poplar       0.00      0.00      0.00         1
+             Crabapple       0.33      0.31      0.32      2559
+ Dakota Pinnacle Birch       0.21      0.21      0.21        38
+           Douglas Fir       0.25      0.15      0.19       112
+     Dwarf Sour Cherry       0.00      0.00      0.00         1
+    Eastern White Pine       0.10      0.17      0.13        24
+                   Elm       0.00      0.00      0.00         3
+      Engelmann Spruce       0.00      0.00      0.00         2
+ European Mountain Ash       0.18      0.22      0.20       284
+         European Plum       0.00      0.00      0.00         2
+        Freemans Maple       0.22      0.25      0.23       232
+         Ginkgo Biloba       0.00      0.00      0.00         1
+       Glens Form Pear       0.00      0.00      0.00         5
+           Green Alder       0.21      0.09      0.13        32
+             Green Ash       0.65      0.69      0.67     16445
+             Hackberry       0.00      0.00      0.00        12
+              Hawthorn       0.35      0.25      0.29       466
+           Honeylocust       0.50      0.07      0.12        28
+         Horsechestnut       0.00      0.00      0.00         4
+          Hybrid Aspen       0.00      0.00      0.00         1
+        Hybrid Buckeye       0.04      0.07      0.05        30
+            Hybrid Elm       0.00      0.00      0.00         3
+         Hybrid Linden       0.35      0.29      0.32      1161
+            Hybrid Oak       0.40      0.22      0.29       143
+           Hybrid Pear       0.13      0.09      0.10        70
+           Hybrid Plum       0.00      0.00      0.00         7
+         Hybrid Poplar       0.36      0.29      0.32      2142
+              Ironwood       0.00      0.00      0.00         3
+             Jack Pine       0.33      0.13      0.19       223
+          Japanese Elm       0.50      0.50      0.50         2
+   Japanese Tree Lilac       0.42      0.36      0.39      1420
+   Kentucky Coffeetree       0.00      0.00      0.00         5
+       Korean Sun Pear       0.00      0.00      0.00         1
+                 Larch       0.37      0.28      0.32       151
+    Laurel Leaf Willow       0.28      0.16      0.20       634
+           Limber Pine       0.00      0.00      0.00         8
+                Linden       0.34      0.13      0.18       374
+     Littleleaf Linden       0.30      0.27      0.28       482
+        Lodgepole Pine       0.32      0.26      0.29      1982
+      Manchurian Alder       0.20      0.40      0.27        50
+        Manchurian Ash       0.39      0.13      0.19       217
+        Manitoba Maple       0.22      0.09      0.13       881
+                 Maple       0.00      0.00      0.00         9
+                Mayday       0.50      0.11      0.18       191
+      Mongolian Linden       0.00      0.00      0.00         6
+        Mountain Alder       0.00      0.00      0.00         2
+          Mountain Ash       0.31      0.09      0.14       280
+         Mountain Pine       0.09      0.11      0.10        28
+             Mugo Pine       0.53      0.46      0.49       625
+      Northern Pin Oak       0.36      0.17      0.23        24
+ Northern Treasure Ash       0.58      0.44      0.50       160
+  Northern White Cedar       0.55      0.50      0.52        12
+          Norway Maple       0.57      0.14      0.22        59
+         Norway Spruce       0.23      0.13      0.17       169
+                   Oak       0.00      0.00      0.00         6
+  Oakleaf Mountain Ash       0.00      0.00      0.00        11
+          Ohio Buckeye       0.31      0.22      0.26       453
+           Paper Birch       0.28      0.14      0.19       396
+                  Pear       0.56      0.25      0.34        20
+          Peking Lilac       0.00      0.00      0.00         2
+            Pin Cherry       0.51      0.31      0.39       116
+               Pin Oak       0.00      0.00      0.00         6
+                  Pine       0.53      0.24      0.33        67
+              Plum sp.       0.00      0.00      0.00         1
+    Plumleaf Crabapple       0.45      0.42      0.43        12
+        Ponderosa Pine       0.32      0.22      0.26       366
+                Poplar       0.20      0.08      0.12       189
+             Red Maple       0.18      0.06      0.09        32
+               Red Oak       0.20      0.06      0.09        36
+           River Birch       1.00      0.11      0.20         9
+Rocky Mountain Juniper       0.75      0.43      0.55        14
+         Russian Olive       0.20      0.06      0.10       203
+            Scots Pine       0.38      0.27      0.32      2103
+        Serbian Spruce       0.00      0.00      0.00         4
+     Sharp Leaf Willow       0.15      0.11      0.13        35
+    Showy Mountain Ash       0.27      0.20      0.23       128
+    Siberian Crabapple       0.42      0.29      0.34      1320
+          Siberian Elm       0.44      0.18      0.26       522
+        Siberian Larch       0.32      0.23      0.27      1486
+          Silver Maple       0.24      0.06      0.09       192
+         Silver Poplar       0.00      0.00      0.00         3
+           Sour Cherry       0.25      0.36      0.29        14
+                Spruce       0.43      0.32      0.36       170
+           Sugar Maple       0.00      0.00      0.00         4
+       Swamp White Oak       0.00      0.00      0.00         1
+Swedish Columnar Aspen       0.53      0.37      0.44       954
+      Swiss Stone Pine       0.38      0.10      0.16       107
+              Tamarack       0.33      0.25      0.29       102
+  Tatarian Honeysuckle       0.00      0.00      0.00         1
+        Tatarian Maple       0.37      0.14      0.20       189
+    Thornless Hawthorn       1.00      0.50      0.67         2
+ Thornless Honeylocust       0.60      0.18      0.27        17
+   Tree Form Saskatoon       0.00      0.00      0.00         1
+       Trembling Aspen       0.54      0.44      0.49      1801
+      Upright Caragana       1.00      0.20      0.33        10
+         Ussurian Pear       0.31      0.14      0.20        35
+         Weeping Birch       0.23      0.11      0.15        27
+         Western Larch       0.00      0.00      0.00         4
+  Western Mountain Ash       0.00      0.00      0.00         1
+    Western White Pine       0.33      0.11      0.17        18
+             White Ash       0.53      0.32      0.40       107
+             White Oak       0.00      0.00      0.00         6
+          White Spruce       0.42      0.37      0.40      4467
+          White Willow       0.23      0.08      0.12       167
+                Willow       0.39      0.10      0.16       126
+
+              accuracy                           0.50     80173
+             macro avg       0.24      0.18      0.19     80173
+          weighted avg       0.48      0.50      0.48     80173
+
+Top 4 recommended species for BELGRAVIA: ['Green Ash', 'Bur Oak', 'Linden', 'Chokecherry']
