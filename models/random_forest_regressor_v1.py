@@ -8,6 +8,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+"""
+Author: mylayambao
+"""
 
 # Load the data from local file
 df = pd.read_csv('/Users/mylayambao/Downloads/edmonton_tree_map.csv') 
