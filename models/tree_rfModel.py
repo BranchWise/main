@@ -1,11 +1,14 @@
 import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import accuracy_score, classification_report, f1_score, roc_auc_score
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from datetime import datetime
+from sklearn.preprocessing import label_binarize
+from sklearn.exceptions import UndefinedMetricWarning
+import warnings
 
 # Step 1: Load Data
 url = 'https://data.edmonton.ca/resource/eecg-fc54.csv'
@@ -47,7 +50,8 @@ target = suitable_trees['species']
 # 4a. One-hot encode categorical features using ColumnTransformer
 preprocessor = ColumnTransformer(
     transformers=[
-        ('cat', OneHotEncoder(drop='first'), ['neighbourhood_name', 'location_type', 'age_category', 'diameter_category'])
+        ('cat', OneHotEncoder(drop='first'), ['neighbourhood_name', 'location_type', 'age_category', 'diameter_category']),
+        ('num', StandardScaler(), ['diameter_breast_height', 'tree_age', 'latitude', 'longitude'])
     ],
     remainder='passthrough'
 )
@@ -71,7 +75,7 @@ param_grid = {
 }
 
 rf = RandomForestClassifier(random_state=42)
-grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
 grid_search.fit(X_train, y_train)
 
 # Get the best parameters
@@ -85,6 +89,14 @@ best_rf.fit(X_train, y_train)
 # Step 7: Model Evaluation
 y_pred = best_rf.predict(X_test)
 print("Accuracy:", accuracy_score(y_test, y_pred))
+print("F1 Score:", f1_score(y_test, y_pred, average='weighted'))
+# Check unique classes in y_train and y_test
+print("Unique classes in y_train:", np.unique(y_train))
+print("Unique classes in y_test:", np.unique(y_test))
+
+# Check the shape of the predicted probabilities
+print("Shape of predicted probabilities:", best_rf.predict_proba(X_test).shape)
+print("ROC AUC Score:", roc_auc_score(y_test, best_rf.predict_proba(X_test), multi_class='ovr'))
 print(classification_report(y_test, y_pred))
 
 # Step 7a: Extract feature importances
@@ -109,22 +121,25 @@ best_rf.fit(X_train_important, y_train)
 
 # Step 7d: Evaluate with selected features
 y_pred_important = best_rf.predict(X_test_important)
+y_pred_proba_important = best_rf.predict_proba(X_test_important)
+
+# Align the predicted probabilities with y_test classes
+unique_test_classes = np.unique(y_test)
+
+# Find the indices of test classes in model classes
+class_indices = [np.where(best_rf.classes_ == cls)[0][0] for cls in unique_test_classes if cls in best_rf.classes_]
+
+# Subset predict_proba to only include columns for the test classes
+aligned_pred_proba = y_pred_proba_important[:, class_indices]
+
+# Binarize y_test to match the structure of aligned_pred_proba
+y_test_binarized = label_binarize(y_test, classes=unique_test_classes)
+
+# Compute the ROC AUC Score
+roc_auc = roc_auc_score(y_test_binarized, aligned_pred_proba, multi_class='ovr')
+print("ROC AUC Score with important features:", roc_auc)
+
+# Standard metrics
 print("Accuracy with important features:", accuracy_score(y_test, y_pred_important))
+print("F1 Score with important features:", f1_score(y_test, y_pred_important, average='weighted'))
 print(classification_report(y_test, y_pred_important))
-
-# Step 8: Prediction Function
-def recommend_top_species(input_features, model, preprocessor, top_features, top_n=5):
-    """
-    Given input features (location data), return the top N recommended species.
-    """
-    input_features_transformed = preprocessor.transform(input_features)
-    input_features_transformed_df = pd.DataFrame(input_features_transformed.toarray(), columns=preprocessor.get_feature_names_out())
-    input_features_important = input_features_transformed_df[top_features]
-    probabilities = model.predict_proba(input_features_important)
-    species_prob = sorted(zip(model.classes_, probabilities[0]), key=lambda x: x[1], reverse=True)
-    return [species for species, prob in species_prob[:top_n]]
-
-# Example: Predicting top 5 species for a sample input
-sample_input = features.iloc[[0]]  # Ensure sample_input has the same structure as features
-top_species = recommend_top_species(sample_input, best_rf, preprocessor, top_features, top_n=5)
-print("Top 5 recommended species:", top_species)
