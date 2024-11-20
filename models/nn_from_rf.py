@@ -1,23 +1,22 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import StackingClassifier
 from datetime import datetime
 
 # Load Data
 url = 'https://data.edmonton.ca/resource/eecg-fc54.csv'
 data = pd.read_csv(url)
-cleaned_data = pd.read_csv('cleaned_tree_data.csv')
+cleaned_data = pd.read_csv('data/preprocessing/cleaned_tree_data.csv')
 
 # Data Preprocessing
-data['PLANTED_DATE'] = pd.to_datetime(data['PLANTED_DATE'], errors='coerce')
+data['PLANTED_DATE'] = pd.to_datetime(data['planted_date'], errors='coerce')
 data['tree_age'] = (datetime.now() - data['PLANTED_DATE']).dt.days // 365  # Convert to years
 
 def categorize_condition(condition):
@@ -30,19 +29,26 @@ def categorize_condition(condition):
     else:
         return "Bad"
 
-data['condition_category'] = data['CONDITION_PERCENT'].apply(categorize_condition)
+data['condition_category'] = data['condition_percent'].apply(categorize_condition)
 suitable_trees = data[data['condition_category'].isin(['Great', 'Good'])]
-features = suitable_trees[['NEIGHBOURHOOD_NAME', 'LOCATION_TYPE', 'DIAMETER_BREAST_HEIGHT', 'tree_age', 'LATITUDE', 'LONGITUDE']]
-target = suitable_trees['SPECIES_COMMON']
+features = suitable_trees[['neighbourhood_name', 'location_type', 'diameter_breast_height', 'tree_age', 'latitude', 'longitude']]
+target = suitable_trees['species']
+
+# Encode target labels
+label_encoder = LabelEncoder()
+target_encoded = label_encoder.fit_transform(target)
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(features, target_encoded, test_size=0.2, random_state=42)
 
 # Preprocessing Pipeline
-numerical_features = ['DIAMETER_BREAST_HEIGHT', 'tree_age', 'LATITUDE', 'LONGITUDE']
+numerical_features = ['diameter_breast_height', 'tree_age', 'latitude', 'longitude']
 numerical_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(strategy='mean')),
     ('scaler', StandardScaler())
 ])
 
-categorical_features = ['NEIGHBOURHOOD_NAME', 'LOCATION_TYPE']
+categorical_features = ['neighbourhood_name', 'location_type']
 categorical_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(strategy='most_frequent')),
     ('onehot', OneHotEncoder(handle_unknown='ignore'))
@@ -56,60 +62,28 @@ preprocessor = ColumnTransformer(
     ])
 
 # Apply preprocessing to features
-X = preprocessor.fit_transform(features)
+X_train_preprocessed = preprocessor.fit_transform(X_train)
+X_test_preprocessed = preprocessor.transform(X_test)
 
-# Encode target labels
-label_encoder = LabelEncoder()
-y = label_encoder.fit_transform(target)
+# Define the model
+rf = RandomForestClassifier()
 
-# Train-Test Split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Hyperparameter Tuning for RandomForest
-rf = RandomForestClassifier(random_state=42)
-rf_param_grid = {
+# Define the parameter grid
+param_grid = {
     'n_estimators': [100, 200],
-    'max_depth': [10, 20],
-    'min_samples_split': [2, 5]
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2]
 }
-rf_grid_search = GridSearchCV(rf, rf_param_grid, cv=3, n_jobs=-1, verbose=2)
-rf_grid_search.fit(X_train, y_train)
-best_rf = rf_grid_search.best_estimator_
 
-# Hyperparameter Tuning for MLPClassifier
-mlp = MLPClassifier(max_iter=500, random_state=42)
-mlp_param_grid = {
-    'hidden_layer_sizes': [(64, 128, 256), (128, 256, 512)],
-    'alpha': [0.0001, 0.001]
-}
-mlp_grid_search = GridSearchCV(mlp, mlp_param_grid, cv=3, n_jobs=-1, verbose=2)
-mlp_grid_search.fit(X_train, y_train)
-best_mlp = mlp_grid_search.best_estimator_
+# Perform grid search
+rf_grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+rf_grid_search.fit(X_train_preprocessed, y_train)
 
+# Make predictions
+y_pred = rf_grid_search.predict(X_test_preprocessed)
 
-estimators = [
-    ('rf', best_rf),
-    ('mlp', best_mlp)
-]
-stacking_clf = StackingClassifier(estimators=estimators, final_estimator=RandomForestClassifier(random_state=42))
-stacking_clf.fit(X_train, y_train)
-
-
-y_pred = stacking_clf.predict(X_test)
-
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
-
-
-def recommend_top_species(input_features, model, label_encoder, top_n=5):
-    """
-    Given input features (location data), return the top N recommended species.
-    """
-    probabilities = model.predict_proba(input_features)
-    species_prob = sorted(zip(label_encoder.classes_, probabilities[0]), key=lambda x: x[1], reverse=True)
-    return [species for species, prob in species_prob[:top_n]]
-
-# Example: Predicting top 5 species for a sample input
-sample_input = X_test[[0]]
-top_species = recommend_top_species(sample_input, stacking_clf, label_encoder, top_n=5)
-print("Top 5 recommended species:", top_species)
+# Print classification report
+print(classification_report(y_test, y_pred, labels=np.unique(y_test), target_names=label_encoder.classes_))
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.2f}")
