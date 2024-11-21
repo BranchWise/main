@@ -10,6 +10,9 @@ from sklearn.preprocessing import label_binarize
 from sklearn.exceptions import UndefinedMetricWarning
 import warnings
 
+# Suppress warnings for clean output
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+
 # Step 1: Load Data
 url = 'https://data.edmonton.ca/resource/eecg-fc54.csv'
 data = pd.read_csv(url)
