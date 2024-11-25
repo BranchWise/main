@@ -10,9 +10,6 @@ from sklearn.preprocessing import label_binarize
 from sklearn.exceptions import UndefinedMetricWarning
 import warnings
 
-# Suppress warnings for clean output
-warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
-
 # Step 1: Load Data
 url = 'https://data.edmonton.ca/resource/eecg-fc54.csv'
 data = pd.read_csv(url)
@@ -78,6 +75,7 @@ param_grid = {
 }
 
 rf = RandomForestClassifier(random_state=42)
+
 grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
 grid_search.fit(X_train, y_train)
 
@@ -99,7 +97,6 @@ print("Unique classes in y_test:", np.unique(y_test))
 
 # Check the shape of the predicted probabilities
 print("Shape of predicted probabilities:", best_rf.predict_proba(X_test).shape)
-print("ROC AUC Score:", roc_auc_score(y_test, best_rf.predict_proba(X_test), multi_class='ovr'))
 print(classification_report(y_test, y_pred))
 
 # Step 7a: Extract feature importances
@@ -113,6 +110,9 @@ feature_importance_df = pd.DataFrame({
 }).sort_values(by='importance', ascending=False)
 
 print("Feature Importances:\n", feature_importance_df)
+
+# Ensure the columns of X_test match those of X_train
+X_test = X_test[X_train.columns]
 
 # Step 7b: Select top features (e.g., top 10)
 top_features = feature_importance_df.head(10)['feature']
@@ -135,12 +135,16 @@ class_indices = [np.where(best_rf.classes_ == cls)[0][0] for cls in unique_test_
 # Subset predict_proba to only include columns for the test classes
 aligned_pred_proba = y_pred_proba_important[:, class_indices]
 
-# Binarize y_test to match the structure of aligned_pred_proba
-y_test_binarized = label_binarize(y_test, classes=unique_test_classes)
+# Ensure y_test has the same classes as y_train
+classes = np.unique(y_train)
+y_test_binarized = label_binarize(y_test, classes=classes)
 
-# Compute the ROC AUC Score
-roc_auc = roc_auc_score(y_test_binarized, aligned_pred_proba, multi_class='ovr')
-print("ROC AUC Score with important features:", roc_auc)
+# Calculate ROC AUC Score only if y_test contains more than one class
+if len(np.unique(y_test)) > 1:
+    roc_auc = roc_auc_score(y_test_binarized, aligned_pred_proba, multi_class='ovr')
+    print("ROC AUC Score with important features:", roc_auc)
+else:
+    print("ROC AUC Score cannot be calculated because y_test contains only one class.")
 
 # Standard metrics
 print("Accuracy with important features:", accuracy_score(y_test, y_pred_important))
