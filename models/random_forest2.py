@@ -135,12 +135,8 @@ test_error = 1 - test_accuracy
 print("Testing Accuracy:", test_accuracy)
 print("Testing Error:", test_error)
 
-# Classification report for the testing set
-print("Testing Classification Report:")
-print(classification_report(y_test, y_test_pred))
-
 # Evaluate the model on the full dataset
-print("Model Classification Report:")
+print("Classification Report:")
 print(classification_report(y_test, y_pred))
 print("Model Accuracy:", accuracy_score(y_test, y_pred))
 
