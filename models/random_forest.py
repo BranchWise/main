@@ -139,12 +139,12 @@ aligned_pred_proba = y_pred_proba_important[:, class_indices]
 classes = np.unique(y_train)
 y_test_binarized = label_binarize(y_test, classes=classes)
 
-# Calculate ROC AUC Score only if y_test contains more than one class
+# Check if there is more than one class in y_test
 if len(np.unique(y_test)) > 1:
     roc_auc = roc_auc_score(y_test_binarized, aligned_pred_proba, multi_class='ovr')
-    print("ROC AUC Score with important features:", roc_auc)
+    print(f"ROC AUC Score: {roc_auc}")
 else:
-    print("ROC AUC Score cannot be calculated because y_test contains only one class.")
+    print("ROC AUC score is not defined for a single class.")
 
 # Standard metrics
 print("Accuracy with important features:", accuracy_score(y_test, y_pred_important))
