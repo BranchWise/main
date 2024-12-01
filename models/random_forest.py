@@ -92,12 +92,27 @@ best_rf.fit(X_train, y_train)
 y_train_pred = best_rf.predict(X_train)
 y_test_pred = best_rf.predict(X_test)
 
-print("Training Accuracy:", accuracy_score(y_train, y_train_pred))
-print("Testing Accuracy:", accuracy_score(y_test, y_test_pred))
+# Accuracy
+train_accuracy = accuracy_score(y_train, y_train_pred)
+test_accuracy = accuracy_score(y_test, y_test_pred)
+
+print("Training Accuracy:", train_accuracy)
+print("Testing Accuracy:", test_accuracy)
+
+# Error
+train_error = 1 - train_accuracy
+test_error = 1 - test_accuracy
+
+print("Training Error:", train_error)
+print("Testing Error:", test_error)
+
+# F1 Scores
 print("Training F1 Score:", f1_score(y_train, y_train_pred, average='weighted'))
 print("Testing F1 Score:", f1_score(y_test, y_test_pred, average='weighted'))
 
+# Classification Report
 print("\nClassification Report (Test):\n", classification_report(y_test, y_test_pred))
+
 
 # Ensure predicted probabilities align with `y_test`
 if len(np.unique(y_test)) > 1:
@@ -105,17 +120,24 @@ if len(np.unique(y_test)) > 1:
     y_test_binarized = label_binarize(y_test, classes=np.unique(y_train))
     y_test_proba = best_rf.predict_proba(X_test)
     
-    # Align predicted probabilities for test classes
-    test_classes = np.unique(y_test)
+    # Filter out `y_test` classes not in `y_train`
+    test_classes = [cls for cls in np.unique(y_test) if cls in best_rf.classes_]
     aligned_proba = np.zeros((y_test_proba.shape[0], len(test_classes)))
+    
     for i, cls in enumerate(test_classes):
-        aligned_proba[:, i] = y_test_proba[:, np.where(best_rf.classes_ == cls)[0][0]]
+        class_indices = np.where(best_rf.classes_ == cls)[0]
+        if class_indices.size > 0:  # Ensure the class exists in the model
+            aligned_proba[:, i] = y_test_proba[:, class_indices[0]]
     
     # Compute ROC AUC Score
-    roc_auc = roc_auc_score(y_test_binarized, aligned_proba, multi_class='ovr')
-    print(f"ROC AUC Score: {roc_auc}")
+    if aligned_proba.shape[1] > 1:  # Ensure at least two classes for ROC AUC
+        roc_auc = roc_auc_score(y_test_binarized, aligned_proba, multi_class='ovr')
+        print(f"ROC AUC Score: {roc_auc}")
+    else:
+        print("ROC AUC score is not defined for fewer than two classes in aligned probabilities.")
 else:
     print("ROC AUC score is not defined for single-class testing data.")
+
 
 # Feature Importances
 importances = best_rf.feature_importances_
