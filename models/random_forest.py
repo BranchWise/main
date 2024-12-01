@@ -10,6 +10,7 @@ from sklearn.preprocessing import label_binarize
 from sklearn.exceptions import UndefinedMetricWarning
 import warnings
 
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 # Step 1: Load Data
 url = 'https://data.edmonton.ca/resource/eecg-fc54.csv'
 data = pd.read_csv(url)
@@ -62,91 +63,80 @@ features_transformed = preprocessor.fit_transform(features)
 # Convert the sparse matrix to a dense DataFrame
 features_transformed_df = pd.DataFrame(features_transformed.toarray(), columns=preprocessor.get_feature_names_out())
 
-# Step 5: Train-Test Split
-X_train, X_test, y_train, y_test = train_test_split(features_transformed_df, target, test_size=0.2, random_state=42)
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    features_transformed_df, target, test_size=0.2, random_state=42
+)
 
-# Step 6: Hyperparameter Tuning with GridSearchCV
+# Hyperparameter Tuning with GridSearchCV
 param_grid = {
     'n_estimators': [50, 100, 200],
-    'max_depth': [None, 10, 20, 30],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4],
-    'bootstrap': [True, False]
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2],
+    'bootstrap': [True, False],
 }
 
 rf = RandomForestClassifier(random_state=42)
 
-grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=1)
 grid_search.fit(X_train, y_train)
 
-# Get the best parameters
-best_params = grid_search.best_params_
-print("Best parameters found: ", best_params)
-
-# Train the model with the best parameters
+# Best Parameters
 best_rf = grid_search.best_estimator_
+
+# Train Model
 best_rf.fit(X_train, y_train)
 
-# Step 7: Model Evaluation
-y_pred = best_rf.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("F1 Score:", f1_score(y_test, y_pred, average='weighted'))
-# Check unique classes in y_train and y_test
-print("Unique classes in y_train:", np.unique(y_train))
-print("Unique classes in y_test:", np.unique(y_test))
+# Evaluation Metrics
+y_train_pred = best_rf.predict(X_train)
+y_test_pred = best_rf.predict(X_test)
 
-# Check the shape of the predicted probabilities
-print("Shape of predicted probabilities:", best_rf.predict_proba(X_test).shape)
-print(classification_report(y_test, y_pred))
+print("Training Accuracy:", accuracy_score(y_train, y_train_pred))
+print("Testing Accuracy:", accuracy_score(y_test, y_test_pred))
+print("Training F1 Score:", f1_score(y_train, y_train_pred, average='weighted'))
+print("Testing F1 Score:", f1_score(y_test, y_test_pred, average='weighted'))
 
-# Step 7a: Extract feature importances
+print("\nClassification Report (Test):\n", classification_report(y_test, y_test_pred))
+
+# Ensure predicted probabilities align with `y_test`
+if len(np.unique(y_test)) > 1:
+    # Align `predict_proba` columns with `y_test` classes
+    y_test_binarized = label_binarize(y_test, classes=np.unique(y_train))
+    y_test_proba = best_rf.predict_proba(X_test)
+    
+    # Align predicted probabilities for test classes
+    test_classes = np.unique(y_test)
+    aligned_proba = np.zeros((y_test_proba.shape[0], len(test_classes)))
+    for i, cls in enumerate(test_classes):
+        aligned_proba[:, i] = y_test_proba[:, np.where(best_rf.classes_ == cls)[0][0]]
+    
+    # Compute ROC AUC Score
+    roc_auc = roc_auc_score(y_test_binarized, aligned_proba, multi_class='ovr')
+    print(f"ROC AUC Score: {roc_auc}")
+else:
+    print("ROC AUC score is not defined for single-class testing data.")
+
+# Feature Importances
 importances = best_rf.feature_importances_
 feature_names = X_train.columns
-
-# Create a DataFrame for visualization and selection
 feature_importance_df = pd.DataFrame({
     'feature': feature_names,
     'importance': importances
 }).sort_values(by='importance', ascending=False)
 
-print("Feature Importances:\n", feature_importance_df)
+print("\nFeature Importances:\n", feature_importance_df)
 
-# Ensure the columns of X_test match those of X_train
-X_test = X_test[X_train.columns]
-
-# Step 7b: Select top features (e.g., top 10)
+# Select Top Features
 top_features = feature_importance_df.head(10)['feature']
-X_train_important = X_train[top_features]
-X_test_important = X_test[top_features]
+X_train_top = X_train[top_features]
+X_test_top = X_test[top_features]
 
-# Step 7c: Retrain model with selected features
-best_rf.fit(X_train_important, y_train)
+# Retrain and Evaluate with Top Features
+best_rf.fit(X_train_top, y_train)
+y_test_top_pred = best_rf.predict(X_test_top)
 
-# Step 7d: Evaluate with selected features
-y_pred_important = best_rf.predict(X_test_important)
-y_pred_proba_important = best_rf.predict_proba(X_test_important)
-
-# Align the predicted probabilities with y_test classes
-unique_test_classes = np.unique(y_test)
-
-# Find the indices of test classes in model classes
-class_indices = [np.where(best_rf.classes_ == cls)[0][0] for cls in unique_test_classes if cls in best_rf.classes_]
-
-# Subset predict_proba to only include columns for the test classes
-aligned_pred_proba = y_pred_proba_important[:, class_indices]
-
-# Ensure y_test has the same classes as y_train
-classes = np.unique(y_train)
-y_test_binarized = label_binarize(y_test, classes=classes)
-
-# Check if there is more than one class in y_test
-if len(np.unique(y_test)) > 1:
-    roc_auc = roc_auc_score(y_test_binarized, aligned_pred_proba, multi_class='ovr')
-    print(f"ROC AUC Score: {roc_auc}")
-else:
-    print("ROC AUC score is not defined for a single class.")
-
-# Standard metrics
-print("Accuracy with important features:", accuracy_score(y_test, y_pred_important))
-print("F1 Score with important features:", f1_score(y_test, y_pred_important, average='weighted'))
-print(classification_report(y_test, y_pred_important))
+print("\nEvaluation with Top Features:")
+print("Testing Accuracy:", accuracy_score(y_test, y_test_top_pred))
+print("Testing F1 Score:", f1_score(y_test, y_test_top_pred, average='weighted'))
+print("\nClassification Report (Top Features):\n", classification_report(y_test, y_test_top_pred))
